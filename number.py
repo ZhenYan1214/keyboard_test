@@ -247,8 +247,15 @@ def handle_postback(event):
             user_inputs[user_id] = ""
 
         if data.startswith("num="):
-            # 數字輸入：靜默更新，不回傳訊息
+            # 數字輸入：使用推送更新顯示，保持流暢體驗
             user_inputs[user_id] += data.split("=")[1]
+            flex_msg = FlexSendMessage(alt_text="輸入血糖值", contents=build_flex(user_inputs[user_id]))
+            try:
+                # 使用 push_message 而不是 reply_message，避免產生新對話氣泡
+                line_bot_api.push_message(user_id, flex_msg)
+            except:
+                # 如果推送失敗，就不更新顯示（保持靜默）
+                pass
             
         elif data == "clear":
             # 清除：重新顯示空白鍵盤
