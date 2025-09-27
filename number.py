@@ -211,69 +211,6 @@ def build_flex(input_value="", completed=False):
     }
     return flex_json
 
-# ===== 建立血糖管理室 Flex 選單 =====
-def build_management_room():
-    flex_json = {
-        "type": "bubble",
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "xl",
-            "paddingAll": "xl",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": "🏥 血糖管理室",
-                    "weight": "bold",
-                    "size": "xxl",
-                    "align": "center",
-                    "color": "#2B5CE6",
-                    "margin": "none"
-                },
-                {
-                    "type": "separator",
-                    "margin": "lg",
-                    "color": "#E1F5FE"
-                },
-                {
-                    "type": "text",
-                    "text": "請選擇您需要的功能",
-                    "size": "md",
-                    "align": "center",
-                    "color": "#64B5F6",
-                    "margin": "lg"
-                },
-                {
-                    "type": "box",
-                    "layout": "vertical",
-                    "spacing": "lg",
-                    "margin": "xl",
-                    "contents": [
-                        {
-                            "type": "button",
-                            "action": {"type": "postback", "label": "📊 開始血糖量測", "data": "action=measure"},
-                            "style": "primary",
-                            "color": "#42A5F5",
-                            "height": "md"
-                        },
-                        {
-                            "type": "button",
-                            "action": {"type": "postback", "label": "📋 查看個人紀錄", "data": "action=record"},
-                            "style": "secondary",
-                            "color": "#E3F2FD",
-                            "height": "md"
-                        }
-                    ]
-                }
-            ]
-        },
-        "styles": {
-            "body": {
-                "backgroundColor": "#FAFFFE"
-            }
-        }
-    }
-    return flex_json
 
 # ===== 首頁測試路由 =====
 @app.route('/')
@@ -298,11 +235,8 @@ def handle_message(event):
     if "我來輸入血糖值囉～" in text:
         flex_msg = FlexSendMessage(alt_text="輸入血糖值", contents=build_flex())
         line_bot_api.reply_message(event.reply_token, flex_msg)
-    elif "血糖管理室" in text:
-        flex_msg = FlexSendMessage(alt_text="血糖管理室選單", contents=build_management_room())
-        line_bot_api.reply_message(event.reply_token, flex_msg)
     else:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="請輸入「我來輸入血糖值囉～」開啟數字鍵盤，或輸入「血糖管理室」開啟功能選單。"))
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="請輸入「我來輸入血糖值囉～」開啟數字鍵盤。"))
 
 # ===== 處理 Postback 事件 =====
 @handler.add(PostbackEvent)
@@ -311,32 +245,30 @@ def handle_postback(event):
     data = event.postback.data
 
     with user_inputs_lock:
-        if data == "action=measure":
+        if user_id not in user_inputs:
+            user_inputs[user_id] = ""
+
+        if data.startswith("num="):
+            # 數字輸入：只更新鍵盤顯示，不發送額外文字訊息
+            user_inputs[user_id] += data.split("=")[1]
+            flex_msg = FlexSendMessage(alt_text="輸入血糖值", contents=build_flex(user_inputs[user_id]))
+            line_bot_api.reply_message(event.reply_token, flex_msg)
+            
+        elif data == "clear":
+            # 清除：只更新鍵盤顯示，不發送額外文字訊息
+            user_inputs[user_id] = ""
             flex_msg = FlexSendMessage(alt_text="輸入血糖值", contents=build_flex())
             line_bot_api.reply_message(event.reply_token, flex_msg)
-
-        elif data == "action=record":
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="這裡會顯示您的血糖紀錄（功能開發中）"))
-
-        else:
-            if user_id not in user_inputs:
-                user_inputs[user_id] = ""
-
-            if data.startswith("num="):
-                user_inputs[user_id] += data.split("=")[1]
-                reply_text = f"目前血糖值輸入: {user_inputs[user_id]}"
-                flex_msg = FlexSendMessage(alt_text="輸入血糖值", contents=build_flex(user_inputs[user_id]))
-            elif data == "clear":
-                user_inputs[user_id] = ""
-                reply_text = "已清除血糖值輸入"
-                flex_msg = FlexSendMessage(alt_text="輸入血糖值", contents=build_flex())
-            elif data == "done":
-                final_value = user_inputs[user_id]
+            
+        elif data == "done":
+            # 完成：發送最終結果
+            final_value = user_inputs[user_id]
+            if final_value:
                 reply_text = f"您輸入的血糖值是: {final_value}"
-                flex_msg = FlexSendMessage(alt_text="最終血糖值", contents=build_flex(final_value, completed=True))
-                user_inputs[user_id] = ""
-
-            line_bot_api.reply_message(event.reply_token, [flex_msg, TextSendMessage(text=reply_text)])
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+            else:
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text="請先輸入血糖值！"))
+            user_inputs[user_id] = ""
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
