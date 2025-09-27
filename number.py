@@ -295,11 +295,14 @@ def webhook():
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     text = event.message.text
-    if "血糖管理室" in text:
+    if "我來輸入血糖值囉～" in text:
+        flex_msg = FlexSendMessage(alt_text="輸入血糖值", contents=build_flex())
+        line_bot_api.reply_message(event.reply_token, flex_msg)
+    elif "血糖管理室" in text:
         flex_msg = FlexSendMessage(alt_text="血糖管理室選單", contents=build_management_room())
         line_bot_api.reply_message(event.reply_token, flex_msg)
     else:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="請輸入「血糖管理室」開啟功能選單。"))
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="請輸入「我來輸入血糖值囉～」開啟數字鍵盤，或輸入「血糖管理室」開啟功能選單。"))
 
 # ===== 處理 Postback 事件 =====
 @handler.add(PostbackEvent)
