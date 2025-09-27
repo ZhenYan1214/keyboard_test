@@ -175,7 +175,7 @@ def build_flex(input_value="", completed=False):
                             "contents": [
                                 {
                                     "type": "button",
-                                    "action": {"type": "postback", "label": "🗑 清除", "data": "clear"},
+                                    "action": {"type": "postback", "label": "清除", "data": "clear"},
                                     "flex": 1,
                                     "style": "primary",
                                     "color": "#FF7043",
@@ -191,7 +191,7 @@ def build_flex(input_value="", completed=False):
                                 },
                                 {
                                     "type": "button",
-                                    "action": {"type": "postback", "label": "✓ 完成", "data": "done"},
+                                    "action": {"type": "postback", "label": "完成", "data": "done"},
                                     "flex": 1,
                                     "style": "primary",
                                     "color": "#42A5F5",
