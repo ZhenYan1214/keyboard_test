@@ -235,8 +235,6 @@ def handle_message(event):
     if "我來輸入血糖值囉～" in text:
         flex_msg = FlexSendMessage(alt_text="輸入血糖值", contents=build_flex())
         line_bot_api.reply_message(event.reply_token, flex_msg)
-    else:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="請輸入「我來輸入血糖值囉～」開啟數字鍵盤。"))
 
 # ===== 處理 Postback 事件 =====
 @handler.add(PostbackEvent)
@@ -249,13 +247,11 @@ def handle_postback(event):
             user_inputs[user_id] = ""
 
         if data.startswith("num="):
-            # 數字輸入：只更新鍵盤顯示，不發送額外文字訊息
+            # 數字輸入：靜默更新，不回傳訊息
             user_inputs[user_id] += data.split("=")[1]
-            flex_msg = FlexSendMessage(alt_text="輸入血糖值", contents=build_flex(user_inputs[user_id]))
-            line_bot_api.reply_message(event.reply_token, flex_msg)
             
         elif data == "clear":
-            # 清除：只更新鍵盤顯示，不發送額外文字訊息
+            # 清除：重新顯示空白鍵盤
             user_inputs[user_id] = ""
             flex_msg = FlexSendMessage(alt_text="輸入血糖值", contents=build_flex())
             line_bot_api.reply_message(event.reply_token, flex_msg)
